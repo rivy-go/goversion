@@ -56,12 +56,15 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"unicode/utf8"
 
 	"rsc.io/goversion/version"
 )
+
+var exe_extension string
 
 var (
 	crypto  = flag.Bool("crypto", false, "check kind of crypto library")
@@ -88,6 +91,12 @@ func main() {
 	if flag.NArg() == 0 {
 		usage()
 	}
+
+	out, err := exec.Command("go", "env", "GOEXE").Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	exe_extension = strings.TrimRight(fmt.Sprintf("%s", out), "\r\n")
 
 	for _, file := range flag.Args() {
 		info, err := os.Stat(file)
@@ -146,7 +155,7 @@ func scanfile(file, diskFile string, info os.FileInfo, mustPrint bool) {
 		}
 		info = i
 	}
-	if file == diskFile && info.Mode()&0111 == 0 {
+	if file == diskFile && info.Mode()&0111 == 0 && (exe_extension == "" || ! strings.HasSuffix(file, exe_extension)) {
 		if mustPrint {
 			fmt.Fprintf(os.Stderr, "%s: not executable\n", file)
 		}
